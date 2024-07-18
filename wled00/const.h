@@ -337,6 +337,7 @@
 #define ESP_NOW_STATE_UNINIT       0
 #define ESP_NOW_STATE_ON           1
 #define ESP_NOW_STATE_ERROR        2
+#define ESP_NOW_STATE_SENDING      3
 
 //Button type
 #define BTN_TYPE_NONE             0

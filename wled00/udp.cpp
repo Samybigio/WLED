@@ -165,7 +165,8 @@ void notify(byte callMode, bool followUp)
       s0++;
     }
     if (s > s0) buffer.noOfPackets += 1 + ((s - s0) * UDP_SEG_SIZE) / bufferSize; // set number of packets
-    auto err = quickEspNow.send(ESPNOW_BROADCAST_ADDRESS, reinterpret_cast<const uint8_t*>(&buffer), packetSize+3);
+    //auto err = quickEspNow.send(ESPNOW_BROADCAST_ADDRESS, reinterpret_cast<const uint8_t*>(&buffer), packetSize+3);
+    auto err = ESPnow_brodcastOnAllChannels(reinterpret_cast<const uint8_t*>(&buffer), packetSize+3);
     if (!err && s0 < s) {
       // send rest of the segments
       buffer.packet++;
@@ -178,14 +179,16 @@ void notify(byte callMode, bool followUp)
         packetSize += UDP_SEG_SIZE;
         if (packetSize + UDP_SEG_SIZE < bufferSize) continue;
         DEBUG_PRINTF_P(PSTR("ESP-NOW sending packet: %d (%d)\n"), (int)buffer.packet, packetSize+3);
-        err = quickEspNow.send(ESPNOW_BROADCAST_ADDRESS, reinterpret_cast<const uint8_t*>(&buffer), packetSize+3);
+        //err = quickEspNow.send(ESPNOW_BROADCAST_ADDRESS, reinterpret_cast<const uint8_t*>(&buffer), packetSize+3);
+        err = ESPnow_brodcastOnAllChannels(reinterpret_cast<const uint8_t*>(&buffer), packetSize+3);
         buffer.packet++;
         packetSize = 0;
         if (err) break;
       }
       if (!err && packetSize > 0) {
         DEBUG_PRINTF_P(PSTR("ESP-NOW sending last packet: %d (%d)\n"), (int)buffer.packet, packetSize+3);
-        err = quickEspNow.send(ESPNOW_BROADCAST_ADDRESS, reinterpret_cast<const uint8_t*>(&buffer), packetSize+3);
+       // err = quickEspNow.send(ESPNOW_BROADCAST_ADDRESS, reinterpret_cast<const uint8_t*>(&buffer), packetSize+3);
+        err = ESPnow_brodcastOnAllChannels(reinterpret_cast<const uint8_t*>(&buffer), packetSize+3);
       }
     }
     if (err) {

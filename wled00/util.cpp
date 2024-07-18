@@ -1,7 +1,8 @@
 #include "wled.h"
 #include "fcn_declare.h"
 #include "const.h"
-
+#include <esp_now.h>
+#include <esp_wifi.h>
 
 //helper to get int value at a position in string
 int getNumVal(const String* req, uint16_t pos)
@@ -598,4 +599,60 @@ uint8_t get_random_wheel_index(uint8_t pos) {
     d = MIN(x, y);
   }
   return r;
+}
+
+int32_t ESPnow_brodcastOnAllChannels(const uint8_t* message, size_t len)
+{  
+  int32_t error;
+  uint8_t globalBroadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+  esp_now_peer_info_t peerInfo = {};
+  memcpy(peerInfo.peer_addr, globalBroadcastAddress, 6);
+  peerInfo.channel = 0; // any channel seems fine, used to get confimation
+  peerInfo.encrypt = false;
+  uint8_t primarychannel;
+  wifi_second_chan_t secondchannel;
+  esp_wifi_get_channel(&primarychannel, &secondchannel); //save for later
+  // Add peer
+  esp_now_add_peer(&peerInfo);
+  //if (error != ESP_OK || error != ESP_ERR_ESPNOW_EXIST) {
+   //  Serial.println("Failed to add peer");
+    // return -1;
+  //}
+  statusESPNow = ESP_NOW_STATE_SENDING;
+  if (WLED_CONNECTED) { //disconnect
+    esp_wifi_disconnect();
+  }
+  for (int i = 1 ; i < 14 ; ++i) {
+    //  WiFi.setChannel(i); // for ESP8266
+    esp_wifi_set_promiscuous(true);
+    esp_wifi_set_channel(i, WIFI_SECOND_CHAN_NONE);
+    esp_wifi_set_promiscuous(false);
+    delay(1);
+    // Send message via ESP-NOW
+    error = esp_now_send(globalBroadcastAddress, message, len);
+  }
+  //set original channels
+  esp_wifi_set_promiscuous(true);
+  esp_wifi_set_channel(primarychannel, secondchannel);
+  esp_wifi_set_promiscuous(false);
+  //reconnect
+  esp_wifi_connect();
+  
+  uint32_t timestamp = millis();
+  while(!WLED_CONNECTED)
+  {
+    delay(5);
+    Serial.print("*");
+  }
+  Serial.print("reconnect took ");
+  Serial.print(millis()-timestamp);
+  Serial.println("ms");
+
+  /*
+    if(esp_wifi_disconnect() == ESP_OK) {
+    return esp_wifi_connect() == ESP_OK;
+  */
+
+  statusESPNow = ESP_NOW_STATE_ON;
+  return error;
 }
