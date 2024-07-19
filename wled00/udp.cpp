@@ -195,7 +195,7 @@ void notify(byte callMode, bool followUp)
       DEBUG_PRINTLN(F("ESP-NOW sending packet failed."));
     }
   }
-  if (udpConnected) 
+  if (udpConnected)
 #endif
   {
     DEBUG_PRINTLN(F("UDP sending packet."));

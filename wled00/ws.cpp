@@ -215,7 +215,7 @@ bool sendLiveLedsWs(uint32_t wsClient)
   return true;
 }
 
-void handleWs()
+void handleWs(bool force)
 {
   if (millis() - wsLastLiveTime > WS_LIVE_INTERVAL)
   {

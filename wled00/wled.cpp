@@ -789,9 +789,9 @@ void WLED::initConnection()
 
 #ifndef WLED_DISABLE_ESPNOW
   if (statusESPNow == ESP_NOW_STATE_ON) {
-  //  DEBUG_PRINTLN(F("ESP-NOW stopping."));
-   // quickEspNow.stop();
-   // statusESPNow = ESP_NOW_STATE_UNINIT;
+    DEBUG_PRINTLN(F("ESP-NOW stopping."));
+    quickEspNow.stop();
+    statusESPNow = ESP_NOW_STATE_UNINIT;
   }
 #endif
 
@@ -925,9 +925,15 @@ void WLED::initInterfaces()
 
 void WLED::handleConnection()
 {
-  //todo: if this works, add the ifdef!!!
+  #ifndef WLED_DISABLE_ESPNOW
   if(statusESPNow == ESP_NOW_STATE_SENDING)
-    return;
+  {
+    if(WLED_CONNECTED) //TODO: need to add a timeout in case it does not reconnect
+      statusESPNow = ESP_NOW_STATE_ON;  
+    else
+      return;
+  }
+  #endif
   static bool scanDone = true;
   static byte stacO = 0;
   unsigned long now = millis();

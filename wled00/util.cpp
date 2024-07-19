@@ -607,7 +607,7 @@ int32_t ESPnow_brodcastOnAllChannels(const uint8_t* message, size_t len)
   uint8_t globalBroadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
   esp_now_peer_info_t peerInfo = {};
   memcpy(peerInfo.peer_addr, globalBroadcastAddress, 6);
-  peerInfo.channel = 0; // any channel seems fine, used to get confimation
+  peerInfo.channel = 0; // any channel seems fine, used to get confimation from peer
   peerInfo.encrypt = false;
   uint8_t primarychannel;
   wifi_second_chan_t secondchannel;
@@ -618,41 +618,44 @@ int32_t ESPnow_brodcastOnAllChannels(const uint8_t* message, size_t len)
    //  Serial.println("Failed to add peer");
     // return -1;
   //}
-  statusESPNow = ESP_NOW_STATE_SENDING;
+
+
   if (WLED_CONNECTED) { //disconnect
-    esp_wifi_disconnect();
+    //esp_wifi_disconnect();
+    handleWs(true); // push data to client
+    sendDataWs(); // update clients before disconnecting
+    //delay(1000); //wait for webserver to finish, TODO: does this help with crashes?
+    WiFi.disconnect();
+    statusESPNow = ESP_NOW_STATE_SENDING; // if set, handleConnection() is paused (or it will reset the wifi connection)
   }
   for (int i = 1 ; i < 14 ; ++i) {
     //  WiFi.setChannel(i); // for ESP8266
     esp_wifi_set_promiscuous(true);
     esp_wifi_set_channel(i, WIFI_SECOND_CHAN_NONE);
     esp_wifi_set_promiscuous(false);
-    delay(1);
+    //delay(1); //TODO: is a delay needed? -> does seem to work without it
     // Send message via ESP-NOW
-    error = esp_now_send(globalBroadcastAddress, message, len);
+    error += esp_now_send(globalBroadcastAddress, message, len);
   }
   //set original channels
   esp_wifi_set_promiscuous(true);
   esp_wifi_set_channel(primarychannel, secondchannel);
   esp_wifi_set_promiscuous(false);
   //reconnect
-  esp_wifi_connect();
+  WiFi.reconnect();
+  //esp_wifi_connect();
   
+  // debug to check timing:
+  /*
   uint32_t timestamp = millis();
   while(!WLED_CONNECTED)
   {
-    delay(5);
+    delay(1);
     Serial.print("*");
   }
   Serial.print("reconnect took ");
   Serial.print(millis()-timestamp);
   Serial.println("ms");
-
-  /*
-    if(esp_wifi_disconnect() == ESP_OK) {
-    return esp_wifi_connect() == ESP_OK;
-  */
-
-  statusESPNow = ESP_NOW_STATE_ON;
+*/
   return error;
 }

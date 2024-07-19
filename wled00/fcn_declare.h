@@ -439,7 +439,7 @@ void serveSettings(AsyncWebServerRequest* request, bool post = false);
 void serveSettingsJS(AsyncWebServerRequest* request);
 
 //ws.cpp
-void handleWs();
+void handleWs(bool force = false);
 void wsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client, AwsEventType type, void * arg, uint8_t *data, size_t len);
 void sendDataWs(AsyncWebSocketClient * client = nullptr);
 
