@@ -66,6 +66,8 @@ typedef struct WiFiConfig {
 } wifi_config;
 
 //colors.cpp
+#define ColorFromPalette ColorFromPaletteWLED // override fastled version
+
 struct CHSV32 { // 32bit HSV color with 16bit hue for more accurate conversions
   union {
     struct {
@@ -101,10 +103,11 @@ class NeoGammaWLEDMethod {
 };
 #define gamma32(c) NeoGammaWLEDMethod::Correct32(c)
 #define gamma8(c)  NeoGammaWLEDMethod::rawGamma8(c)
-[[gnu::hot]] uint32_t color_blend(uint32_t,uint32_t,uint16_t,bool b16=false);
-[[gnu::hot]] uint32_t color_add(uint32_t,uint32_t, bool fast=false);
+[[gnu::hot]] uint32_t color_blend(uint32_t, uint32_t, uint16_t, bool b16=false);
+[[gnu::hot]] uint32_t color_add(uint32_t, uint32_t, bool preserveCR = false);
 [[gnu::hot]] uint32_t color_fade(uint32_t c1, uint8_t amount, bool video=false);
 uint32_t adjust_color(uint32_t rgb, uint32_t hueShift, uint32_t lighten, uint32_t brighten);
+[[gnu::hot]] uint32_t ColorFromPaletteWLED(const CRGBPalette16 &pal, unsigned index, uint8_t brightness = (uint8_t)255U, TBlendType blendType = LINEARBLEND);
 CRGBPalette16 generateHarmonicRandomPalette(CRGBPalette16 &basepalette);
 CRGBPalette16 generateRandomPalette();
 inline uint32_t colorFromRgbw(byte* rgbw) { return uint32_t((byte(rgbw[3]) << 24) | (byte(rgbw[0]) << 16) | (byte(rgbw[1]) << 8) | (byte(rgbw[2]))); }
