@@ -261,8 +261,8 @@ void ParticleSystem::flameEmit(PSsource &emitter)
 // angle = 0 means in positive x-direction (i.e. to the right)
 int32_t ParticleSystem::angleEmit(PSsource &emitter, uint16_t angle, int8_t speed, uint32_t amount)
 {
-  emitter.vx = ((int32_t)cos16(angle) * (int32_t)speed) / (int32_t)32600; // cos16() and sin16() return signed 16bit, division should be 32767 but 32600 gives slightly better rounding 
-  emitter.vy = ((int32_t)sin16(angle) * (int32_t)speed) / (int32_t)32600; // note: cannot use bit shifts as bit shifting is asymmetrical for positive and negative numbers and this needs to be accurate!
+  emitter.vx = ((int32_t)cos16_t(angle) * (int32_t)speed) / (int32_t)32600; // cos16() and sin16() return signed 16bit, division should be 32767 but 32600 gives slightly better rounding 
+  emitter.vy = ((int32_t)sin16_t(angle) * (int32_t)speed) / (int32_t)32600; // note: cannot use bit shifts as bit shifting is asymmetrical for positive and negative numbers and this needs to be accurate!
   return sprayEmit(emitter, amount);
 }
 
@@ -519,8 +519,8 @@ void ParticleSystem::applyForce(int8_t xforce, int8_t yforce)
 // force is in 3.4 fixed point notation so force=16 means apply v+1 each frame (useful force range is +/- 127)
 void ParticleSystem::applyAngleForce(PSparticle *part, int8_t force, uint16_t angle, uint8_t *counter)
 {
-  int8_t xforce = ((int32_t)force * cos16(angle)) / 32767; // force is +/- 127
-  int8_t yforce = ((int32_t)force * sin16(angle)) / 32767; // note: cannot use bit shifts as bit shifting is asymmetrical for positive and negative numbers and this needs to be accurate!
+  int8_t xforce = ((int32_t)force * cos16_t(angle)) / 32767; // force is +/- 127
+  int8_t yforce = ((int32_t)force * sin16_t(angle)) / 32767; // note: cannot use bit shifts as bit shifting is asymmetrical for positive and negative numbers and this needs to be accurate!
   // note: sin16 is 10% faster than sin8() on ESP32 but on ESP8266 it is 9% slower
   applyForce(part, xforce, yforce, counter);
 }
@@ -536,8 +536,8 @@ void ParticleSystem::applyAngleForce(uint16_t particleindex, int8_t force, uint1
 // angle is from 0-65535 (=0-360deg) angle = 0 means in positive x-direction (i.e. to the right)
 void ParticleSystem::applyAngleForce(int8_t force, uint16_t angle)
 {
-  int8_t xforce = ((int32_t)force * cos16(angle)) / 32767; // force is +/- 127
-  int8_t yforce = ((int32_t)force * sin16(angle)) / 32767; // note: cannot use bit shifts as bit shifting is asymmetrical for positive and negative numbers and this needs to be accurate!
+  int8_t xforce = ((int32_t)force * cos16_t(angle)) / 32767; // force is +/- 127
+  int8_t yforce = ((int32_t)force * sin16_t(angle)) / 32767; // note: cannot use bit shifts as bit shifting is asymmetrical for positive and negative numbers and this needs to be accurate!
   applyForce(xforce, yforce);
 }
 
@@ -629,8 +629,8 @@ void ParticleSystem::lineAttractor(uint16_t particleindex, PSparticle *attractor
     return; // no advanced properties available
 
   // calculate a second point on the line
-  int32_t x1 = attractorcenter->x + (cos16(attractorangle) >> 5);
-  int32_t y1 = attractorcenter->y + (sin16(attractorangle) >> 5);
+  int32_t x1 = attractorcenter->x + (cos16_t(attractorangle) >> 5);
+  int32_t y1 = attractorcenter->y + (sin16_t(attractorangle) >> 5);
   // calculate squared distance from particle to the line:
   int32_t dx = (x1 - attractorcenter->x) >> 4;
   int32_t dy = (y1 - attractorcenter->y) >> 4;

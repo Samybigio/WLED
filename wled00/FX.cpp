@@ -8447,8 +8447,8 @@ uint16_t mode_particlebox(void)
     }
     else // go in a circle
     {      
-      xgravity = ((int32_t)(SEGMENT.custom1) * cos16(SEGENV.aux0 << 8)) / 0xFFFF;
-      ygravity = ((int32_t)(SEGMENT.custom1) * sin16(SEGENV.aux0 << 8)) / 0xFFFF;
+      xgravity = ((int32_t)(SEGMENT.custom1) * cos16_t(SEGENV.aux0 << 8)) / 0xFFFF;
+      ygravity = ((int32_t)(SEGMENT.custom1) * sin16_t(SEGENV.aux0 << 8)) / 0xFFFF;
     }
     if (SEGMENT.check3) // sloshing, y force is alwys downwards
     {
@@ -9247,8 +9247,8 @@ uint16_t mode_particleghostrider(void)
   SEGENV.aux0 += (int32_t)SEGENV.step; // step is angle increment
   uint16_t emitangle = SEGENV.aux0 + 32767; // +180°
   int32_t speed = map(SEGMENT.speed, 0, 255, 12, 64);
-  PartSys->sources[0].source.vx = ((int32_t)cos16(SEGENV.aux0) * speed) / (int32_t)32767; 
-  PartSys->sources[0].source.vy = ((int32_t)sin16(SEGENV.aux0) * speed) / (int32_t)32767;
+  PartSys->sources[0].source.vx = ((int32_t)cos16_t(SEGENV.aux0) * speed) / (int32_t)32767; 
+  PartSys->sources[0].source.vy = ((int32_t)sin16_t(SEGENV.aux0) * speed) / (int32_t)32767;
   PartSys->sources[0].source.ttl = 500; // source never dies (note: setting 'perpetual' is not needed if replenished each frame)
   PartSys->particleMoveUpdate(PartSys->sources[0].source, &ghostsettings);
   // set head (steal one of the particles)
@@ -10291,7 +10291,7 @@ uint16_t mode_particleBalance(void)
     if(SEGMENT.check3) // random, use perlin noise    
       xgravity = ((int16_t)inoise8(SEGENV.aux0) - 128);     
     else // sinusoidal           
-      xgravity = (int16_t)cos8(SEGENV.aux0) - 128;//((int32_t)(SEGMENT.custom3 << 2) * cos8(SEGENV.aux0)
+      xgravity = (int16_t)cos8_t(SEGENV.aux0) - 128;//((int32_t)(SEGMENT.custom3 << 2) * cos8_t(SEGENV.aux0)
     // scale the force 
     xgravity = (xgravity * ((SEGMENT.custom3+1) << 2)) / 128; 
     PartSys->applyForce(xgravity);
