@@ -42,21 +42,31 @@ To keep this usermod simple and easy to use, it is a very basic implementation o
 
 ## Usermod installation
 
-Use `#define USERMOD_DEEP_SLEEP` in wled.h or `-D USERMOD_DEEP_SLEEP` in your platformio.ini
+Use `#define USERMOD_DEEP_SLEEP` in wled.h or `-D USERMOD_DEEP_SLEEP` in your platformio.ini. Settings can be changed in the usermod config UI.
 
 ### Define Settings
 
-Place the `#define` in wled.h or add `-D DEEPSLEEP_xxx` to your platformio_override.ini build flags
+There are five parameters you can set:
 
-* `DEEPSLEEP_WAKEUPPIN x`    - REQUIRED: define the pin to be used for wake-up, see list of useable pins above. The pin can be used normally as a button pin in WLED.
-* `DEEPSLEEP_WAKEWHENHIGH`   - OPTIONAL: if defined, wakes up when pin goes high (default is low)
-* `DEEPSLEEP_DISABLEPULL`    - OPTIONAL: if defined, internal pullup/pulldown is disabled in deep sleep (default is ebnabled)
-* `DEEPSLEEP_WAKEUPINTERVAL` - OPTIONAL: number of seconds after which a wake-up happens automatically (sooner if button is pressed) must be > 0, accuracy is about 2%
+- GPIO: the pin to use for wake-up
+- WakeWhen High/Low: the pin state that triggers the wake-up
+- Pull-up/down disable: enable or disable the internal pullup resistors during sleep (does not affect normal use while running)
+- Wake after: if set larger than 0, ESP will automatically wake-up after this many seconds (Turn LEDs on after power up/reset is overriden, it will always turn on)
+- Delay sleep: if set larger than 0, ESP will not go to sleep for this many seconds after you power it off. Timer is reset when switched back on during this time.
+
+To override the default settings, place the `#define` in wled.h or add `-D DEEPSLEEP_xxx` to your platformio_override.ini build flags
+
+* `DEEPSLEEP_WAKEUPPIN x`    - define the pin to be used for wake-up, see list of useable pins above. The pin can be used normally as a button pin in WLED.
+* `DEEPSLEEP_WAKEWHENHIGH`   - if defined, wakes up when pin goes high (default is low)
+* `DEEPSLEEP_DISABLEPULL`    - if defined, internal pullup/pulldown is disabled in deep sleep (default is ebnabled)
+* `DEEPSLEEP_WAKEUPINTERVAL` - number of seconds after which a wake-up happens automatically, sooner if button is pressed. 0 = never. accuracy is about 2%
+* `DEEPSLEEP_DELAY`          - delay between power-off and sleep
 
 example for env build flags:
  `-D USERMOD_DEEP_SLEEP`
  `-D DEEPSLEEP_WAKEUPPIN=4`
- `-D DEEPSLEEP_WAKEUPINTERVAL=43200` ;wake up after 12 hours
+ `-D DEEPSLEEP_DISABLEPULL=0` ;enable pull-up/down resistors by default
+ `-D DEEPSLEEP_WAKEUPINTERVAL=43200` ;wake up after 12 hours (or when button is pressed)
 
 now go on and save some power
 @dedehai
