@@ -447,6 +447,7 @@ typedef struct Segment {
         uint8_t _reserved : 4;
       };
     };
+    uint8_t _default_palette;  // palette number that gets assigned to pal0
     unsigned        _dataLen;
     static unsigned _usedSegmentData;
     static uint8_t  _segBri;                  // brightness of segment for current effect
