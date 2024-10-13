@@ -41,9 +41,6 @@ class DeepSleepUsermod : public Usermod {
     // string that are used multiple time (this will save some flash memory)
     static const char _name[];
     static const char _enabled[];
-    static const char _addoption[];
-    static const char _adddropdown[];
-    static const char _addinfo[];
 
     bool pin_is_valid(uint8_t wakePin) {
     #ifdef CONFIG_IDF_TARGET_ESP32 //ESP32: GPIOs 0,2,4, 12-15, 25-39 can be used for wake-up
@@ -187,13 +184,10 @@ void addToConfig(JsonObject& root) override
     void appendConfigData() override
     {
       // dropdown for wakeupPin
-      oappend(String(FPSTR(_adddropdown)).c_str());
-      oappend(String(FPSTR(_name)).c_str());
-      oappend(SET_F("','gpio');"));
+      oappend(SET_F("dd=addDropdown('DeepSleep','gpio');"));
       for (int pin = 0; pin < 40; pin++) { // possible pins are in range 0-39
         if (pin_is_valid(pin)) {
-          oappend(String(FPSTR(_addoption)).c_str());
-          oappend(SET_F("'"));
+          oappend(SET_F("addOption(dd,'"));
           oappend(String(pin).c_str());
           oappend(SET_F("',"));
           oappend(String(pin).c_str());
@@ -201,29 +195,13 @@ void addToConfig(JsonObject& root) override
         }
       }
 
-      // Dropdown for wake on high/low
-      oappend(String(FPSTR(_adddropdown)).c_str());
-      oappend(String(FPSTR(_name)).c_str());
-      oappend(SET_F("','wakeWhen');"));
-      oappend(String(FPSTR(_addoption)).c_str());
-      oappend(SET_F("'Low',0);"));
-      oappend(String(FPSTR(_addoption)).c_str());
-      oappend(SET_F("'High',1);"));
+      oappend(SET_F("dd=addDropdown('DeepSleep','wakeWhen');"));
+      oappend(SET_F("addOption(dd,'Low',0);"));
+      oappend(SET_F("addOption(dd,'High',1);"));
 
-      // Add info for pullup/pulldown
-      oappend(String(FPSTR(_addinfo)).c_str());
-      oappend(String(FPSTR(_name)).c_str());
-      oappend(SET_F(":pull',1,'','-up/down disable: ');")); // first string is suffix, second string is prefix
-
-      // Input field for wakeupInterval using addInfo
-      oappend(String(FPSTR(_addinfo)).c_str());
-      oappend(String(FPSTR(_name)).c_str());
-      oappend(SET_F(":wakeAfter',1,'seconds (0 = never)');"));
-
-      // Input field for sleepDelay
-      oappend(String(FPSTR(_addinfo)).c_str());
-      oappend(String(FPSTR(_name)).c_str());
-      oappend(SET_F(":delaySleep',1,'seconds');")); // first string is suffix, second string is prefix
+      oappend(SET_F("addInfo('DeepSleep:pull',1,'','-up/down disable: ');")); // first string is suffix, second string is prefix
+      oappend(SET_F("addInfo('DeepSleep::wakeAfter',1,'seconds (0 = never)');"));
+      oappend(SET_F("addInfo('DeepSleep::delaySleep',1,'seconds');")); // first string is suffix, second string is prefix
     }
 
     /*
@@ -239,6 +217,3 @@ void addToConfig(JsonObject& root) override
 // add more strings here to reduce flash memory usage
 const char DeepSleepUsermod::_name[]    PROGMEM = "DeepSleep";
 const char DeepSleepUsermod::_enabled[] PROGMEM = "enabled";
-const char DeepSleepUsermod::_addoption[] PROGMEM = "addOption(dd,";
-const char DeepSleepUsermod::_adddropdown[] PROGMEM = "dd=addDropdown('";
-const char DeepSleepUsermod::_addinfo[] PROGMEM = "addInfo('";
