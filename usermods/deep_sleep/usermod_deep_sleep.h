@@ -71,7 +71,11 @@ class DeepSleepUsermod : public Usermod {
     void setup() {
       //TODO: if the de-init of RTC pins is required to do it could be done here
       //rtc_gpio_deinit(wakeupPin);
-      if(bootup == false) offMode = false; // not first bootup, turn LEDs on (overrides Turn LEDs on after power up/reset' at reboot)
+      if(bootup == false && !turnOnAtBoot) { // not first bootup, turn LEDs on (override turnOnAtBoot) or loop() will go back to deep sleep
+        if (briS == 0) bri = 5; // turn on at low brightness
+        else bri = briS;
+        offMode = false;
+      }
       initDone = true;
     }
 
@@ -80,9 +84,8 @@ class DeepSleepUsermod : public Usermod {
         lastLoopTime = 0; // reset timer
         return;
       }
-      bootup = false; // turn leds on in all subsequent bootups
 
-      if (sleepDelay > 0) {
+      if (sleepDelay > 0 && !bootup) {
         if(lastLoopTime == 0) lastLoopTime = millis(); // initialize
         if (millis() - lastLoopTime < sleepDelay * 1000) {
             return; // wait until delay is over
@@ -90,8 +93,8 @@ class DeepSleepUsermod : public Usermod {
       }
 
       DEBUG_PRINTLN(F("DeepSleep UM: entering deep sleep..."));
+      bootup = false; // turn leds on in all subsequent bootups (overrides Turn LEDs on after power up/reset' at reboot)
       if(!pin_is_valid(wakeupPin)) return;
-      DEBUG_PRINTLN(F("Error: unsupported deep sleep wake-up pin"));
       esp_err_t halerror = ESP_OK;
       pinMode(wakeupPin, INPUT); // make sure GPIO is input with pullup/pulldown disabled
       esp_sleep_disable_wakeup_source(ESP_SLEEP_WAKEUP_ALL); //disable all wake-up sources (just in case)
@@ -113,22 +116,17 @@ class DeepSleepUsermod : public Usermod {
     else
       halerror = esp_deep_sleep_enable_gpio_wakeup(1<<wakeupPin, ESP_GPIO_WAKEUP_GPIO_LOW);
   #else // ESP32, S2, S3
-    #ifndef DEEPSLEEP_DISABLEPULL
-      #ifdef DEEPSLEEP_WAKEWHENHIGH
-      rtc_gpio_pulldown_en((gpio_num_t)wakeupPin);
-      #else
-      rtc_gpio_pullup_en((gpio_num_t)wakeupPin);
-      #endif
-    #endif
+    gpio_pulldown_dis((gpio_num_t)wakeupPin); // disable internal pull resistors for GPIO use
+    gpio_pullup_dis((gpio_num_t)wakeupPin);
     if(noPull) {
       rtc_gpio_pullup_dis((gpio_num_t)wakeupPin);
       rtc_gpio_pulldown_dis((gpio_num_t)wakeupPin);
     }
-    else { // enable pullup/pulldown resistor
+    else { // enable pullup/pulldown resistor for RTC use
       if(wakeWhenHigh)
         rtc_gpio_pulldown_en((gpio_num_t)wakeupPin);
       else
-         rtc_gpio_pullup_en((gpio_num_t)wakeupPin);
+        rtc_gpio_pullup_en((gpio_num_t)wakeupPin);
     }
     if(wakeWhenHigh)
       halerror = esp_sleep_enable_ext0_wakeup((gpio_num_t)wakeupPin, HIGH); // only RTC pins can be used

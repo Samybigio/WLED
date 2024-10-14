@@ -68,9 +68,17 @@ example for env build flags:
  `-D DEEPSLEEP_DISABLEPULL=0` ;enable pull-up/down resistors by default
  `-D DEEPSLEEP_WAKEUPINTERVAL=43200` ;wake up after 12 hours (or when button is pressed)
 
+### Hardware Setup
+
+To wake from deep-sleep an external trigger signal on the configured GPIO is required. When using timed-only wake-up, use a GPIO that has an on-board pull-up resistor (GPIO0 on most boards). When using push-buttons it is highly recommended to use an external pull-up resistor: not all IO's on all devices have properly working internal resistors.
+
+Using sensors like PIR, IR, touch sensors or any other sensor with a digital output can be used instead of a button.
+
 now go on and save some power
 @dedehai
 
 ## Change log
 2024-09
 * Initial version
+2024-10
+* Changed from #define configuration to UI configuration
