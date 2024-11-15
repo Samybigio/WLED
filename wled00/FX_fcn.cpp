@@ -614,26 +614,18 @@ Segment &Segment::setPalette(uint8_t pal) {
 }
 
 // 2D matrix
-uint16_t Segment::virtualWidth() const {
+unsigned Segment::virtualWidth() const {
   unsigned groupLen = groupLength();
   unsigned vWidth = ((transpose ? height() : width()) + groupLen - 1) / groupLen;
   if (mirror) vWidth = (vWidth + 1) /2;  // divide by 2 if mirror, leave at least a single LED
   return vWidth;
 }
 
-uint16_t Segment::virtualHeight() const {
+unsigned Segment::virtualHeight() const {
   unsigned groupLen = groupLength();
   unsigned vHeight = ((transpose ? width() : height()) + groupLen - 1) / groupLen;
   if (mirror_y) vHeight = (vHeight + 1) /2;  // divide by 2 if mirror, leave at least a single LED
   return vHeight;
-}
-
-uint16_t Segment::nrOfVStrips() const {
-  unsigned vLen = 1;
-#ifndef WLED_DISABLE_2D
-  if (is2D() && map1D2D == M12_pBar) vLen = virtualWidth();
-#endif
-  return vLen;
 }
 
 // Constants for mapping mode "Pinwheel"
@@ -1380,7 +1372,7 @@ void WS2812FX::service() {
         // would need to be allocated for each effect and then blended together for each pixel.
         [[maybe_unused]] uint8_t tmpMode = seg.currentMode();  // this will return old mode while in transition
         seg.beginDraw();                      // set up parameters for get/setPixelColor()
-        delay = (*_mode[seg.mode])();         // run new/current mode
+        frameDelay = (*_mode[seg.mode])();         // run new/current mode
 #ifndef WLED_DISABLE_MODE_BLEND
         if (modeBlending && seg.mode != tmpMode) {
           Segment::tmpsegd_t _tmpSegData;
