@@ -1779,7 +1779,7 @@ void WS2812FX::loadCustomPalettes() {
           if (pal[0].is<int>() && pal[1].is<const char *>()) {
             // we have an array of index & hex strings
             size_t palSize = MIN(pal.size(), 36);
-            palSize -= palSize % 2; // make sure size is multiple of 2
+            palSize -= palSize & 1; // make sure size is multiple of 2
             for (size_t i=0, j=0; i<palSize && pal[i].as<int>()<256; i+=2, j+=4) {
               uint8_t rgbw[] = {0,0,0,0};
               tcp[ j ] = (uint8_t) pal[ i ].as<int>(); // index

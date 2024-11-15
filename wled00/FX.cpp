@@ -156,14 +156,13 @@ uint16_t mode_copy_segment(void) {
   if (sourcesegment.isActive()) {
     uint32_t sourcecolor;
     if(!sourcesegment.is2D()) { // 1D source, source can be expanded into 2D
-      uint32_t cl; // length to copy
-      for (unsigned i = 0; i < SEGMENT.virtualLength(); i++) {
+      for (unsigned i = 0; i < SEGMENT.vLength(); i++) {
         sourcecolor = strip.getRenderedPixelXY(sourceid, i);
         SEGMENT.setPixelColor(i, adjust_color(sourcecolor, SEGMENT.intensity, SEGMENT.custom1, SEGMENT.custom2));
       }
     } else { // 2D source, note: 2D to 1D just copies the first row (or first column if 'Switch axis' is checked in FX)
-      for (unsigned y = 0; y <  SEGMENT.virtualHeight(); y++) {
-        for (unsigned x = 0; x < SEGMENT.virtualWidth(); x++) {
+      for (unsigned y = 0; y <  SEGMENT.vHeight(); y++) {
+        for (unsigned x = 0; x < SEGMENT.vWidth(); x++) {
           if(SEGMENT.check2) sourcecolor = strip.getRenderedPixelXY(sourceid, y, x); // flip axis (for 2D -> 1D, in 2D Segments this does the same as 'Transpose')
           else sourcecolor = strip.getRenderedPixelXY(sourceid, x, y);
           SEGMENT.setPixelColorXY(x, y, adjust_color(sourcecolor, SEGMENT.intensity, SEGMENT.custom1, SEGMENT.custom2));
@@ -1119,7 +1118,7 @@ uint16_t mode_chase_flash(void) {
 
   unsigned delay = 10 + ((30 * (uint16_t)(255 - SEGMENT.speed)) / SEGLEN);
   if(flash_step < (FLASH_COUNT * 2)) {
-    if(flash_step % 2 == 0) {
+    if((flash_step & 1) == 0) {
       unsigned n = SEGENV.step;
       unsigned m = (SEGENV.step + 1) % SEGLEN;
       SEGMENT.setPixelColor( n, SEGCOLOR(1));
@@ -1151,7 +1150,7 @@ uint16_t mode_chase_flash_random(void) {
   if(flash_step < (FLASH_COUNT * 2)) {
     unsigned n = SEGENV.aux1;
     unsigned m = (SEGENV.aux1 + 1) % SEGLEN;
-    if(flash_step % 2 == 0) {
+    if((flash_step & 1) == 0) {
       SEGMENT.setPixelColor( n, SEGCOLOR(0));
       SEGMENT.setPixelColor( m, SEGCOLOR(0));
       delay = 20;
@@ -1794,7 +1793,7 @@ uint16_t mode_multi_comet(void) {
       unsigned index = comets[i];
       if (SEGCOLOR(2) != 0)
       {
-        SEGMENT.setPixelColor(index, i % 2 ? SEGMENT.color_from_palette(index, true, PALETTE_SOLID_WRAP, 0) : SEGCOLOR(2));
+        SEGMENT.setPixelColor(index, (i & 1) ? SEGMENT.color_from_palette(index, true, PALETTE_SOLID_WRAP, 0) : SEGCOLOR(2));
       } else
       {
         SEGMENT.setPixelColor(index, SEGMENT.color_from_palette(index, true, PALETTE_SOLID_WRAP, 0));
@@ -4866,7 +4865,7 @@ uint16_t mode_perlinmove(void) {
   for (int i = 0; i < SEGMENT.intensity/16 + 1; i++) {
     unsigned locn = inoise16(strip.now*128/(260-SEGMENT.speed)+i*15000, strip.now*128/(260-SEGMENT.speed)); // Get a new pixel location from moving noise.
     unsigned pixloc = map(locn, 50*256, 192*256, 0, SEGLEN-1);                                            // Map that to the length of the strand, and ensure we don't go over.
-    SEGMENT.setPixelColor(pixloc, SEGMENT.color_from_palette(pixloc%255, false, PALETTE_SOLID_WRAP, 0));
+    SEGMENT.setPixelColor(pixloc, SEGMENT.color_from_palette(pixloc&255, false, PALETTE_SOLID_WRAP, 0));
   }
 
   return FRAMETIME;
@@ -4933,14 +4932,14 @@ uint16_t mode_2DBlackHole(void) {            // By: Stepko https://editor.soulma
   unsigned long t = strip.now/128;                 // timebase
   // outer stars
   for (size_t i = 0; i < 8; i++) {
-    x = beatsin8_t(SEGMENT.custom1>>3,   0, cols - 1, 0, ((i % 2) ? 128 : 0) + t * i);
-    y = beatsin8_t(SEGMENT.intensity>>3, 0, rows - 1, 0, ((i % 2) ? 192 : 64) + t * i);
+    x = beatsin8_t(SEGMENT.custom1>>3,   0, cols - 1, 0, ((i & 1) ? 128 : 0) + t * i);
+    y = beatsin8_t(SEGMENT.intensity>>3, 0, rows - 1, 0, ((i & 1) ? 192 : 64) + t * i);
     SEGMENT.addPixelColorXY(x, y, SEGMENT.color_from_palette(i*32, false, PALETTE_SOLID_WRAP, SEGMENT.check1?0:255));
   }
   // inner stars
   for (size_t i = 0; i < 4; i++) {
-    x = beatsin8_t(SEGMENT.custom2>>3, cols/4, cols - 1 - cols/4, 0, ((i % 2) ? 128 : 0) + t * i);
-    y = beatsin8_t(SEGMENT.custom3   , rows/4, rows - 1 - rows/4, 0, ((i % 2) ? 192 : 64) + t * i);
+    x = beatsin8_t(SEGMENT.custom2>>3, cols/4, cols - 1 - cols/4, 0, ((i & 1) ? 128 : 0) + t * i);
+    y = beatsin8_t(SEGMENT.custom3   , rows/4, rows - 1 - rows/4, 0, ((i & 1) ? 192 : 64) + t * i);
     SEGMENT.addPixelColorXY(x, y, SEGMENT.color_from_palette(255-i*64, false, PALETTE_SOLID_WRAP, SEGMENT.check1?0:255));
   }
   // central white dot
@@ -5082,8 +5081,8 @@ uint16_t mode_2DDrift() {              // By: Stepko   https://editor.soulmateli
   const int cols = SEG_W;
   const int rows = SEG_H;
 
-  const int colsCenter = (cols>>1) + (cols%2);
-  const int rowsCenter = (rows>>1) + (rows%2);
+  const int colsCenter = (cols>>1) + (cols&1);
+  const int rowsCenter = (rows>>1) + (rows&1);
 
   SEGMENT.fadeToBlackBy(128);
   const float maxDim = MAX(cols, rows)/2;
@@ -5183,7 +5182,7 @@ uint16_t mode_2Dgameoflife(void) { // Written by Ewoud Wijma, inspired by https:
 
     //give the leds random state and colors (based on intensity, colors from palette or all posible colors are chosen)
     for (int x = 0; x < cols; x++) for (int y = 0; y < rows; y++) {
-      unsigned state = random8()%2;
+      unsigned state = random8()&1;
       if (state == 0)
         SEGMENT.setPixelColorXY(x,y, backgroundColor);
       else
@@ -5645,7 +5644,7 @@ uint16_t mode_2DPolarLights(void) {        // By: Kostyantyn Matviyevskyy  https
   for (int x = 0; x < cols; x++) {
     for (int y = 0; y < rows; y++) {
       SEGENV.step++;
-      uint8_t palindex = qsub8(inoise8((SEGENV.step%2) + x * _scale, y * 16 + SEGENV.step % 16, SEGENV.step / _speed), fabsf((float)rows / 2.0f - (float)y) * adjustHeight);
+      uint8_t palindex = qsub8(inoise8((SEGENV.step&1) + x * _scale, y * 16 + (SEGENV.step & 15), SEGENV.step / _speed), fabsf((float)rows / 2.0f - (float)y) * adjustHeight);
       uint8_t palbrightness = palindex;
       if(SEGMENT.check1) palindex = 255 - palindex; //flip palette
       SEGMENT.setPixelColorXY(x, y, SEGMENT.color_from_palette(palindex, false, false, 255, palbrightness));
@@ -6158,7 +6157,7 @@ uint16_t mode_2Dscrollingtext(void) {
     case 5: letterWidth = 5; letterHeight = 12; break;
   }
   // letters are rotated
-  if (((SEGMENT.custom3+1)>>3) % 2) {
+  if (((SEGMENT.custom3+1)>>3) & 1) {
     rotLH = letterWidth;
     rotLW = letterHeight;
   } else {
@@ -6252,8 +6251,8 @@ uint16_t mode_2Ddriftrose(void) {
   const int cols = SEG_W;
   const int rows = SEG_H;
 
-  const float CX = (cols-cols%2)/2.f - .5f;
-  const float CY = (rows-rows%2)/2.f - .5f;
+  const float CX = (cols-(cols&1))/2.f - .5f;
+  const float CY = (rows-(rows&1))/2.f - .5f;
   const float L = min(cols, rows) / 2.f;
 
   SEGMENT.fadeToBlackBy(32+(SEGMENT.speed>>3));
@@ -6638,7 +6637,7 @@ uint16_t mode_matripix(void) {                  // Matripix. By Andrew Tuline.
     SEGMENT.fill(BLACK);
   }
 
-  uint8_t secondHand = micros()/(256-SEGMENT.speed)/500 % 16;
+  uint8_t secondHand = (micros()/(256-SEGMENT.speed)/500) & 15; // & 15 is the same as % 16
   if(SEGENV.aux0 != secondHand) {
     SEGENV.aux0 = secondHand;
 
@@ -6757,7 +6756,7 @@ uint16_t mode_pixelwave(void) {                 // Pixelwave. By Andrew Tuline.
   um_data_t *um_data = getAudioData();
   int volumeRaw    = *(int16_t*)um_data->u_data[1];
 
-  uint8_t secondHand = micros()/(256-SEGMENT.speed)/500+1 % 16;
+  uint8_t secondHand = (micros()/(256-SEGMENT.speed)/500+1) & 15; // & 15 is the same as % 16
   if (SEGENV.aux0 != secondHand) {
     SEGENV.aux0 = secondHand;
 
@@ -6876,13 +6875,13 @@ uint16_t mode_pixels(void) {                    // Pixels. By Andrew Tuline.
   }
   float   volumeSmth   = *(float*)  um_data->u_data[0];
 
-  myVals[strip.now%32] = volumeSmth;    // filling values semi randomly
+  myVals[strip.now & 31] = volumeSmth;    // filling values semi randomly, & 31 is the same as % 32
 
   SEGMENT.fade_out(64+(SEGMENT.speed>>1));
 
   for (int i=0; i <SEGMENT.intensity/8; i++) {
     unsigned segLoc = random16(SEGLEN);                    // 16 bit for larger strands of LED's.
-    SEGMENT.setPixelColor(segLoc, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(myVals[i%32]+i*4, false, PALETTE_SOLID_WRAP, 0), volumeSmth));
+    SEGMENT.setPixelColor(segLoc, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(myVals[i & 31]+i*4, false, PALETTE_SOLID_WRAP, 0), volumeSmth));
   }
 
   return FRAMETIME;
@@ -6910,7 +6909,7 @@ uint16_t mode_blurz(void) {                    // Blurz. By Andrew Tuline.
   SEGENV.step += FRAMETIME;
   if (SEGENV.step > SPEED_FORMULA_L) {
     unsigned segLoc = random16(SEGLEN);
-    SEGMENT.setPixelColor(segLoc, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(2*fftResult[SEGENV.aux0%16]*240/max(1, (int)SEGLEN-1), false, PALETTE_SOLID_WRAP, 0), 2*fftResult[SEGENV.aux0%16]));
+    SEGMENT.setPixelColor(segLoc, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(2*fftResult[SEGENV.aux0 & 15]*240/max(1, (int)SEGLEN-1), false, PALETTE_SOLID_WRAP, 0), 2*fftResult[SEGENV.aux0 & 15])); // & 15 is the same as % 16
     ++(SEGENV.aux0) %= 16; // make sure it doesn't cross 16
 
     SEGENV.step = 1;
@@ -6936,7 +6935,7 @@ uint16_t mode_DJLight(void) {                   // Written by ??? Adapted by Wil
     SEGMENT.fill(BLACK);
   }
 
-  uint8_t secondHand = micros()/(256-SEGMENT.speed)/500+1 % 64;
+  uint8_t secondHand = (micros()/(256-SEGMENT.speed)/500+1) & 63; // & 63 is the same as % 64
   if (SEGENV.aux0 != secondHand) {                        // Triggered millis timing.
     SEGENV.aux0 = secondHand;
 
@@ -6999,7 +6998,7 @@ uint16_t mode_freqmatrix(void) {                // Freqmatrix. By Andreas Plesch
     SEGMENT.fill(BLACK);
   }
 
-  uint8_t secondHand = micros()/(256-SEGMENT.speed)/500 % 16;
+  uint8_t secondHand = (micros()/(256-SEGMENT.speed)/500) & 15; // & 15 is the same as % 16
   if(SEGENV.aux0 != secondHand) {
     SEGENV.aux0 = secondHand;
 
@@ -7097,7 +7096,7 @@ uint16_t mode_freqwave(void) {                  // Freqwave. By Andreas Pleschun
     SEGMENT.fill(BLACK);
   }
 
-  uint8_t secondHand = micros()/(256-SEGMENT.speed)/500 % 16;
+  uint8_t secondHand = (micros()/(256-SEGMENT.speed)/500) & 15; // & 15 is the same as % 16
   if(SEGENV.aux0 != secondHand) {
     SEGENV.aux0 = secondHand;
 
@@ -7150,7 +7149,7 @@ uint16_t mode_noisemove(void) {                 // Noisemove.    By: Andrew Tuli
     unsigned locn = inoise16(strip.now*SEGMENT.speed+i*50000, strip.now*SEGMENT.speed);   // Get a new pixel location from moving noise.
     // if SEGLEN equals 1 locn will be always 0, hence we set the first pixel only
     locn = map(locn, 7500, 58000, 0, SEGLEN-1);           // Map that to the length of the strand, and ensure we don't go over.
-    SEGMENT.setPixelColor(locn, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(i*64, false, PALETTE_SOLID_WRAP, 0), fftResult[i % 16]*4));
+    SEGMENT.setPixelColor(locn, color_blend(SEGCOLOR(1), SEGMENT.color_from_palette(i*64, false, PALETTE_SOLID_WRAP, 0), fftResult[i & 15]*4)); // & 15 is the same as % 16
   }
 
   return FRAMETIME;
@@ -7219,7 +7218,7 @@ uint16_t mode_waterfall(void) {                   // Waterfall. By: Andrew Tulin
   *binNum = SEGMENT.custom1;                              // Select a bin.
   *maxVol = SEGMENT.custom2 / 2;                          // Our volume comparator.
 
-  uint8_t secondHand = micros() / (256-SEGMENT.speed)/500 + 1 % 16;
+  uint8_t secondHand = (micros() / (256-SEGMENT.speed)/500 + 1) & 15;  // & 15 is the same as % 16
   if (SEGENV.aux0 != secondHand) {                        // Triggered millis timing.
     SEGENV.aux0 = secondHand;
 
@@ -7321,14 +7320,14 @@ uint16_t mode_2DFunkyPlank(void) {              // Written by ??? Adapted by Wil
     SEGMENT.fill(BLACK);
   }
 
-  uint8_t secondHand = micros()/(256-SEGMENT.speed)/500+1 % 64;
+  uint8_t secondHand = (micros()/(256-SEGMENT.speed)/500+1) & 63; // & 63 is the same as % 64
   if (SEGENV.aux0 != secondHand) {                        // Triggered millis timing.
     SEGENV.aux0 = secondHand;
 
     // display values of
     int b = 0;
     for (int band = 0; band < NUMB_BANDS; band += bandInc, b++) {
-      int hue = fftResult[band % 16];
+      int hue = fftResult[band & 15]; // & 15 is the same as % 16
       int v = map(fftResult[band % 16], 0, 255, 10, 255);
       for (int w = 0; w < barWidth; w++) {
          int xpos = (barWidth * b) + w;
@@ -8521,7 +8520,7 @@ uint16_t mode_particleperlin(void)
     uint16_t ynoise = PartSys->particles[i].y / scale;
     int16_t baseheight = inoise8(xnoise, ynoise, SEGENV.aux0); // noise value at particle position
     PartSys->particles[i].hue = baseheight; // color particles to perlin noise value
-    if (SEGMENT.call % 8 == 0) // do not apply the force every frame, is too chaotic
+    if ((SEGMENT.call & 7) == 0) // do not apply the force every frame, is too chaotic
     {
       int8_t xslope = (baseheight + (int16_t)inoise8(xnoise - 10, ynoise, SEGENV.aux0));
       int8_t yslope = (baseheight + (int16_t)inoise8(xnoise, ynoise - 10, SEGENV.aux0));
@@ -8746,7 +8745,7 @@ uint16_t mode_particleattractor(void)
      PartSys->sources[0].source.hue++;
   
   SEGENV.aux0 += 256; // emitting angle, one full turn in 255 frames (0xFFFF is 360°)
-  if (SEGMENT.call % 2 == 0) // alternate direction of emit
+  if ((SEGMENT.call & 1) == 0) // alternate direction of emit
     PartSys->angleEmit(PartSys->sources[0], SEGENV.aux0, 12);
   else
     PartSys->angleEmit(PartSys->sources[0], SEGENV.aux0 + 0x7FFF, 12); // emit at 180° as well
@@ -8874,14 +8873,14 @@ uint16_t mode_particleattractor(void)
   }
 
   SEGENV.aux0 += 256;       // emitting angle, one full turn in 255 frames (0xFFFF is 360°)
-  if (SEGMENT.call % 2 == 0) // alternate direction of emit
+  if ((SEGMENT.call & 1) == 0) // alternate direction of emit
     PartSys->angleEmit(PartSys->sources[0], SEGENV.aux0, SEGMENT.custom1 >> 4);
   else
     PartSys->angleEmit(PartSys->sources[0], SEGENV.aux0 + 0x7FFF, SEGMENT.custom1 >> 4); // emit at 180° as well
 
   SEGENV.aux1 = 0;//++; //line attractor angle
   // apply force
-  if(SEGMENT.call % 2 == 0)
+  if((SEGMENT.call & 1) == 0)
   for (i = 0; i < displayparticles; i++)
   {
     //PartSys->lineAttractor(&PartSys->particles[i], attractor, SEGENV.aux1, &counters[i], SEGMENT.speed); //TODO: upate this to advanced particles!!!
