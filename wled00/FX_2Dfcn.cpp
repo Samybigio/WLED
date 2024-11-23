@@ -279,7 +279,7 @@ void Segment::blur2D(uint8_t blur_x, uint8_t blur_y, bool smear) {
   uint32_t last;
   if (blur_x) {
     const uint8_t keepx = smear ? 255 : 255 - blur_x;
-    const uint8_t seepx = blur_x >> (1 + smear);
+    const uint8_t seepx = blur_x >> 1;
     for (unsigned row = 0; row < rows; row++) { // blur rows (x direction)
       uint32_t carryover = BLACK;
       uint32_t curnew = BLACK;
@@ -302,7 +302,7 @@ void Segment::blur2D(uint8_t blur_x, uint8_t blur_y, bool smear) {
   }
   if (blur_y) {
     const uint8_t keepy = smear ? 255 : 255 - blur_y;
-    const uint8_t seepy = blur_y >> (1 + smear);
+    const uint8_t seepy = blur_y >> 1;
     for (unsigned col = 0; col < cols; col++) {
       uint32_t carryover = BLACK;
       uint32_t curnew = BLACK;
