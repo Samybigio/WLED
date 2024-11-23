@@ -572,20 +572,15 @@ void WLED::beginStrip()
   strip.makeAutoSegments();
   strip.setBrightness(0);
   strip.setShowCallback(handleOverlayDraw);
-
+  for (unsigned i = 0; i < strip.getSegmentsNum(); i++) {
+    Segment &seg = strip.getSegment(i);
+    if (seg.isActive()) seg.colors[0] = BLACK;
+  }
   if (turnOnAtBoot) {
     if (briS > 0) bri = briS;
     else if (bri == 0) bri = 128;
   } else {
-    // fix for #3196
-    if (bootPreset > 0) {
-      // set all segments black (no transition)
-      for (unsigned i = 0; i < strip.getSegmentsNum(); i++) {
-        Segment &seg = strip.getSegment(i);
-        if (seg.isActive()) seg.colors[0] = BLACK;
-      }
-      col[0] = col[1] = col[2] = col[3] = 0;  // needed for colorUpdated()
-    }
+    col[0] = col[1] = col[2] = col[3] = 0;  // needed for colorUpdated() if bootPreset is set
     briLast = briS; bri = 0;
     strip.fill(BLACK);
     strip.show();
