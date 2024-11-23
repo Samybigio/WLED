@@ -7672,7 +7672,7 @@ uint16_t mode_2Dwavingcell() {
   const int cols = SEG_W;
   const int rows = SEG_H;
 
-  uint32_t t = strip.now/(257-SEGMENT.speed);
+  uint32_t t = (strip.now*(SEGMENT.speed + 1))>>3;
   uint32_t aX = SEGMENT.custom1/16 + 9;
   uint32_t aY = SEGMENT.custom2/16 + 1;
   uint32_t aZ = SEGMENT.custom3 + 1;
@@ -7683,7 +7683,6 @@ uint16_t mode_2Dwavingcell() {
       SEGMENT.setPixelColorXY(x, y, ColorFromPalette(SEGPALETTE, colorIndex));
     }
   }
-
   SEGMENT.blur(SEGMENT.intensity);
   return FRAMETIME;
 }
