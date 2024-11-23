@@ -2578,8 +2578,11 @@ static uint16_t ripple_base(uint8_t blurAmount = 0) {
 
 uint16_t mode_ripple(void) {
   if (SEGLEN == 1) return mode_static();
-  if (!SEGMENT.check2) SEGMENT.fill(SEGCOLOR(1));
-  else                 SEGMENT.fade_out(250);
+  if(SEGMENT.custom1 || SEGMENT.check2) // blur or overlay
+    SEGMENT.fade_out(250);
+  else
+    SEGMENT.fill(SEGCOLOR(1));
+
   return ripple_base(SEGMENT.custom1>>1);
 }
 static const char _data_FX_MODE_RIPPLE[] PROGMEM = "Ripple@!,Wave #,Blur,,,,Overlay;,!;!;12;c1=0";
@@ -5004,7 +5007,7 @@ uint16_t mode_2Ddna(void) {         // dna originally by by ldirko at https://pa
     SEGMENT.setPixelColorXY(i, beatsin8_t(SEGMENT.speed/8, 0, rows-1, 0, i*4    ), ColorFromPalette(SEGPALETTE, i*5+strip.now/17, beatsin8_t(5, 55, 255, 0, i*10), LINEARBLEND));
     SEGMENT.setPixelColorXY(i, beatsin8_t(SEGMENT.speed/8, 0, rows-1, 0, i*4+128), ColorFromPalette(SEGPALETTE, i*5+128+strip.now/17, beatsin8_t(5, 55, 255, 0, i*10+128), LINEARBLEND));
   }
-  SEGMENT.blur(SEGMENT.intensity>>(3-(SEGMENT.check1 * 2)), SEGMENT.check1);
+  SEGMENT.blur(SEGMENT.intensity>>(3-SEGMENT.check1), SEGMENT.check1);
 
   return FRAMETIME;
 } // mode_2Ddna()
@@ -5051,7 +5054,7 @@ uint16_t mode_2DDNASpiral() {               // By: ldirko  https://editor.soulma
       SEGMENT.setPixelColorXY(x1, i, WHITE);
     }
   }
-  SEGMENT.blur(SEGMENT.custom1 >> (!SEGMENT.check1), SEGMENT.check1); 
+  SEGMENT.blur(SEGMENT.custom1 >> 1, SEGMENT.check1);
 
   return FRAMETIME;
 } // mode_2DDNASpiral()
@@ -5081,7 +5084,7 @@ uint16_t mode_2DDrift() {              // By: Stepko   https://editor.soulmateli
     SEGMENT.setPixelColorXY(colsCenter + mySin, rowsCenter + myCos, ColorFromPalette(SEGPALETTE, (i * 20) + t_20, 255, LINEARBLEND));
     if (SEGMENT.check1) SEGMENT.setPixelColorXY(colsCenter + myCos, rowsCenter + mySin, ColorFromPalette(SEGPALETTE, (i * 20) + t_20, 255, LINEARBLEND));
   }
-  SEGMENT.blur(SEGMENT.intensity>>((!SEGMENT.check2) * 3), SEGMENT.check2);
+  SEGMENT.blur(SEGMENT.intensity>>(3 - SEGMENT.check2), SEGMENT.check2);
 
   return FRAMETIME;
 } // mode_2DDrift()
@@ -5133,7 +5136,7 @@ uint16_t mode_2DFrizzles(void) {                 // By: Stepko https://editor.so
                             beatsin8_t(SEGMENT.intensity/8 - i, 0, rows - 1),
                             ColorFromPalette(SEGPALETTE, beatsin8_t(12, 0, 255), 255, LINEARBLEND));
   }
-  SEGMENT.blur(SEGMENT.custom1 >> 3, SEGMENT.check1);
+  SEGMENT.blur(SEGMENT.custom1 >> (3 + SEGMENT.check1), SEGMENT.check1);
   return FRAMETIME;
 } // mode_2DFrizzles()
 static const char _data_FX_MODE_2DFRIZZLES[] PROGMEM = "Frizzles@X frequency,Y frequency,Blur,,,Smear;;!;2";
@@ -5382,7 +5385,7 @@ uint16_t mode_2DJulia(void) {                           // An animated Julia set
     y += dy;
   }
   if(SEGMENT.check1)
-    SEGMENT.blur(128, true);
+    SEGMENT.blur(100, true);
 
   return FRAMETIME;
 } // mode_2DJulia()
@@ -5411,11 +5414,11 @@ uint16_t mode_2DLissajous(void) {            // By: Andrew Tuline
     ylocn = (rows < 2) ? 1 : (map(2*ylocn, 0,511, 0,2*(rows-1)) +1) /2;    // "rows > 1" is needed to avoid div/0 in map()
     SEGMENT.setPixelColorXY((uint8_t)xlocn, (uint8_t)ylocn, SEGMENT.color_from_palette(strip.now/100+i, false, PALETTE_SOLID_WRAP, 0));
   }
-  SEGMENT.blur(SEGMENT.custom1>>1);
+  SEGMENT.blur(SEGMENT.custom1>> (1 + SEGMENT.check1 * 2), SEGMENT.check1);
 
   return FRAMETIME;
 } // mode_2DLissajous()
-static const char _data_FX_MODE_2DLISSAJOUS[] PROGMEM = "Lissajous@X frequency,Fade rate,Blur,,Speed;!;!;2;c1=0";
+static const char _data_FX_MODE_2DLISSAJOUS[] PROGMEM = "Lissajous@X frequency,Fade rate,Blur,,Speed,Smear;!;!;2;c1=0";
 
 
 ///////////////////////
@@ -5686,7 +5689,7 @@ uint16_t mode_2DSindots(void) {                             // By: ldirko   http
     int y = sin8_t(t2 + i * SEGMENT.intensity/8)*(rows-1)/255;  // max index now 255x15/255=15!
     SEGMENT.setPixelColorXY(x, y, ColorFromPalette(SEGPALETTE, i * 255 / 13, 255, LINEARBLEND));
   }
-  SEGMENT.blur(SEGMENT.custom2>>3, SEGMENT.check1);
+  SEGMENT.blur(SEGMENT.custom2 >> (3 + SEGMENT.check1), SEGMENT.check1);
 
   return FRAMETIME;
 } // mode_2DSindots()
@@ -5706,7 +5709,7 @@ uint16_t mode_2Dsquaredswirl(void) {            // By: Mark Kriegsman. https://g
 
   const uint8_t kBorderWidth = 2;
 
-  SEGMENT.fadeToBlackBy(24);
+  SEGMENT.fadeToBlackBy(1 + SEGMENT.intensity / 5);
   SEGMENT.blur(SEGMENT.custom3>>1);
 
   // Use two out-of-sync sine waves
@@ -5723,7 +5726,7 @@ uint16_t mode_2Dsquaredswirl(void) {            // By: Mark Kriegsman. https://g
 
   return FRAMETIME;
 } // mode_2Dsquaredswirl()
-static const char _data_FX_MODE_2DSQUAREDSWIRL[] PROGMEM = "Squared Swirl@,,,,Blur;;!;2";
+static const char _data_FX_MODE_2DSQUAREDSWIRL[] PROGMEM = "Squared Swirl@,Fade,,,Blur;;!;2";
 
 
 //////////////////////////////
@@ -5849,7 +5852,7 @@ uint16_t mode_2Dspaceships(void) {    //// Space ships by stepko (c)05.02.21 [ht
       SEGMENT.addPixelColorXY(x, y-1, color);
     }
   }
-  SEGMENT.blur(SEGMENT.intensity >> (3 - SEGMENT.check1), SEGMENT.check1);
+  SEGMENT.blur(SEGMENT.intensity >> 3, SEGMENT.check1);
 
   return FRAMETIME;
 }
@@ -5899,8 +5902,8 @@ uint16_t mode_2Dcrazybees(void) {
 
   if (strip.now > SEGENV.step) {
     SEGENV.step = strip.now + (FRAMETIME * 16 / ((SEGMENT.speed>>4)+1));
-    SEGMENT.fadeToBlackBy(32 + ((SEGMENT.check1*SEGMENT.intensity) >> 2));
-    SEGMENT.blur(SEGMENT.intensity >> 1, SEGMENT.check1);
+    SEGMENT.fadeToBlackBy(32 + ((SEGMENT.check1*SEGMENT.intensity) / 25));
+    SEGMENT.blur(SEGMENT.intensity >> (1 + SEGMENT.check1 * 2), SEGMENT.check1);
     for (size_t i = 0; i < n; i++) {
       uint32_t flowerCcolor = SEGMENT.color_from_palette(bee[i].hue, false, true, 255);
       SEGMENT.addPixelColorXY(bee[i].aimX + 1, bee[i].aimY, flowerCcolor);
@@ -6248,7 +6251,7 @@ uint16_t mode_2Ddriftrose(void) {
     uint32_t y = (CY + (cos_t(angle) * (beatsin8_t(i, 0, L*2)-L))) * 255.f;
     SEGMENT.wu_pixel(x, y, CHSV(i * 10, 255, 255));
   }
-  SEGMENT.blur(SEGMENT.intensity >> (4 - SEGMENT.check1), SEGMENT.check1);
+  SEGMENT.blur(SEGMENT.intensity >> 4, SEGMENT.check1);
 
   return FRAMETIME;
 }
@@ -7673,8 +7676,13 @@ uint16_t mode_2Dwavingcell() {
   uint32_t aX = SEGMENT.custom1/16 + 9;
   uint32_t aY = SEGMENT.custom2/16 + 1;
   uint32_t aZ = SEGMENT.custom3 + 1;
-  for (int x = 0; x < cols; x++) for (int y = 0; y <rows; y++)
-    SEGMENT.setPixelColorXY(x, y, ColorFromPalette(SEGPALETTE, ((sin8_t((x*aX)+sin8_t((y+t)*aY))+cos8_t(y*aZ))+1)+t));
+  for (int x = 0; x < cols; x++) {
+    for (int y = 0; y < rows; y++) {
+      uint32_t wave = sin8((x * aX) + sin8((((y<<8) + t) * aY)>>8)) + cos8(y * aZ); // bit shifts to increase temporal resolution
+      uint8_t colorIndex = wave + (t>>(8-(SEGMENT.check2*3)));
+      SEGMENT.setPixelColorXY(x, y, ColorFromPalette(SEGPALETTE, colorIndex));
+    }
+  }
 
   SEGMENT.blur(SEGMENT.intensity);
   return FRAMETIME;

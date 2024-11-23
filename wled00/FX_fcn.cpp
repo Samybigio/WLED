@@ -1131,7 +1131,7 @@ void Segment::blur(uint8_t blur_amount, bool smear) {
   }
 #endif
   uint8_t keep = smear ? 255 : 255 - blur_amount;
-  uint8_t seep = blur_amount >> (1 + smear);
+  uint8_t seep = blur_amount >> 1;
   unsigned vlength = vLength();
   uint32_t carryover = BLACK;
   uint32_t lastnew;
