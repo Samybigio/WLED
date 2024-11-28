@@ -458,7 +458,7 @@ typedef struct Segment {
       grouping(1),
       spacing(0),
       opacity(255),
-      colors{DEFAULT_COLOR,BLACK,BLACK},
+      colors{BLACK,BLACK,BLACK},
       cct(127),
       custom1(DEFAULT_C1),
       custom2(DEFAULT_C2),

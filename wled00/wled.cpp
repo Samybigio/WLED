@@ -576,20 +576,15 @@ void WLED::beginStrip()
     if (briS > 0) bri = briS;
     else if (bri == 0) bri = 128;
   } else {
-    // fix for #3196
-    if (bootPreset > 0) {
-      bool oldTransition = fadeTransition;    // workaround if transitions are enabled
-      fadeTransition = false;                 // ignore transitions temporarily
-      strip.setColor(0, BLACK);               // set all segments black
-      fadeTransition = oldTransition;         // restore transitions
-      col[0] = col[1] = col[2] = col[3] = 0;  // needed for colorUpdated()
-    }
     briLast = briS; bri = 0;
-    strip.fill(BLACK);
     strip.show();
   }
   if (bootPreset > 0) {
     applyPreset(bootPreset, CALL_MODE_INIT);
+  }
+  else { // turn on at bright orange "to stimulate courage, friendliness and success!"
+    strip.setColor(0, DEFAULT_COLOR);
+    col[0] = 255; col[1] = 160;
   }
   colorUpdated(CALL_MODE_INIT); // will not send notification
 
