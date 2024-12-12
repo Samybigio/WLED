@@ -2034,7 +2034,7 @@ uint16_t mode_palette() {
   const bool inputAnimateRotation = SEGMENT.check2;
   const bool inputAssumeSquare    = SEGMENT.check3;
 
-  const angleType theta = (!inputAnimateRotation) ? (inputRotation * maxAngle / staticRotationScale) : (((strip.now * ((inputRotation >> 4) +1)) & 0xFFFF) * animatedRotationScale);
+  const angleType theta = (!inputAnimateRotation) ? ((inputRotation + 128) * maxAngle / staticRotationScale) : (((strip.now * ((inputRotation >> 4) +1)) & 0xFFFF) * animatedRotationScale);
   const mathType sinTheta = sinFunction(theta);
   const mathType cosTheta = cosFunction(theta);
 
@@ -2053,7 +2053,7 @@ uint16_t mode_palette() {
   // So the rectangle needs to have exactly the right size. That size depends on the rotation.
   // This scale computation here only considers one dimension. You can think of it like the rectangle is always scaled so that
   // the left and right most points always match the left and right side of the display.
-  const mathType scale   = std::abs(sinTheta) + (std::abs(cosTheta) * maxYOut / maxXOut);
+  const mathType scale = std::abs(sinTheta) + (std::abs(cosTheta) * maxYOut / maxXOut);
   // 2D simulation:
   // If we are dealing with a 1D setup, we assume that each segment represents one line on a 2-dimensional display.
   // The function is called once per segments, so we need to handle one line at a time.
@@ -2084,8 +2084,8 @@ uint16_t mode_palette() {
         colorIndex = ((inputSize - 112) * colorIndex) / 16;
       }
       // Finally, shift the palette a bit.
-      const int paletteOffset = (!inputAnimateShift) ? (inputShift-128) : (((strip.now * ((inputShift >> 3) +1)) & 0xFFFF) >> 8);
-      colorIndex += paletteOffset;
+      const int paletteOffset = (!inputAnimateShift) ? (inputShift) : (((strip.now * ((inputShift >> 3) +1)) & 0xFFFF) >> 8);
+      colorIndex -= paletteOffset;
       const uint32_t color = SEGMENT.color_wheel((uint8_t)colorIndex);
       if (isMatrix) {
         SEGMENT.setPixelColorXY(x, y, color);
@@ -2096,7 +2096,7 @@ uint16_t mode_palette() {
   }
   return FRAMETIME;
 }
-static const char _data_FX_MODE_PALETTE[] PROGMEM = "Palette@Shift,Size,Rotation,,,Animate Shift,Animate Rotation,Anamorphic;;!;12;c1=128,c2=128,c3=128,o1=1,o2=0,o3=0";
+static const char _data_FX_MODE_PALETTE[] PROGMEM = "Palette@Shift,Size,Rotation,,,Animate Shift,Animate Rotation,Anamorphic;;!;12;c1=128,c2=128,c3=128,o1=1,o2=1,o3=0";
 
 #ifndef DISABLE_2D_PS_REPLACEMENTS
 // WLED limitation: Analog Clock overlay will NOT work when Fire2012 is active
@@ -2615,11 +2615,11 @@ static CRGB twinklefox_one_twinkle(uint32_t ms, uint8_t salt, bool cat)
 {
   // Overall twinkle speed (changed)
   unsigned ticks = ms / SEGENV.aux0;
-  unsigned fastcycle8 = ticks;
-  unsigned slowcycle16 = (ticks >> 8) + salt;
+  unsigned fastcycle8 = uint8_t(ticks);
+  uint16_t slowcycle16 = (ticks >> 8) + salt;
   slowcycle16 += sin8_t(slowcycle16);
   slowcycle16 = (slowcycle16 * 2053) + 1384;
-  unsigned slowcycle8 = (slowcycle16 & 0xFF) + (slowcycle16 >> 8);
+  uint8_t slowcycle8 = (slowcycle16 & 0xFF) + (slowcycle16 >> 8);
 
   // Overall twinkle density.
   // 0 (NONE lit) to 8 (ALL lit at once).
@@ -3600,7 +3600,7 @@ uint16_t mode_exploding_fireworks(void)
   if (segs <= (strip.getMaxSegments() /4)) maxData *= 2; //ESP8266: 1024 if <= 4 segs ESP32: 2560 if <= 8 segs
   int maxSparks = maxData / sizeof(spark); //ESP8266: max. 21/42/85 sparks/seg, ESP32: max. 53/106/213 sparks/seg
 
-  unsigned numSparks = min(2 + ((rows*cols) >> 1), maxSparks);
+  unsigned numSparks = min(5 + ((rows*cols) >> 1), maxSparks);
   unsigned dataSize = sizeof(spark) * numSparks;
   if (!SEGENV.allocateData(dataSize + sizeof(float))) return mode_static(); //allocation failed
   float *dying_gravity = reinterpret_cast<float*>(SEGENV.data + dataSize);
@@ -3655,7 +3655,8 @@ uint16_t mode_exploding_fireworks(void)
      * Size is proportional to the height.
      */
     unsigned nSparks = flare->pos + random8(4);
-    nSparks = constrain(nSparks, 4, numSparks);
+    nSparks = std::max(nSparks, 4U);  // This is not a standard constrain; numSparks is not guaranteed to be at least 4
+    nSparks = std::min(nSparks, numSparks);
 
     // initialize sparks
     if (SEGENV.aux0 == 2) {
@@ -4542,7 +4543,7 @@ uint16_t mode_blends(void) {
   unsigned offset = 0;
   for (unsigned i = 0; i < SEGLEN; i++) {
     SEGMENT.setPixelColor(i, pixels[offset++]);
-    if (offset > pixelLen) offset = 0;
+    if (offset >= pixelLen) offset = 0;
   }
 
   return FRAMETIME;
@@ -4676,7 +4677,7 @@ uint16_t mode_tv_simulator(void) {
 
   return FRAMETIME;
 }
-static const char _data_FX_MODE_TV_SIMULATOR[] PROGMEM = "TV Simulator@!,!;;";
+static const char _data_FX_MODE_TV_SIMULATOR[] PROGMEM = "TV Simulator@!,!;;!;01";
 
 
 /*
@@ -5341,8 +5342,8 @@ uint16_t mode_2DJulia(void) {                           // An animated Julia set
   reAl = -0.94299f;               // PixelBlaze example
   imAg = 0.3162f;
 
-  reAl += sin_t((float)strip.now/305.f)/20.f;
-  imAg += sin_t((float)strip.now/405.f)/20.f;
+  reAl += (float)sin16_t(strip.now * 34) / 655340.f;
+  imAg += (float)sin16_t(strip.now * 26) / 655340.f;
 
   dx = (xmax - xmin) / (cols);     // Scale the delta x and y values to our matrix size.
   dy = (ymax - ymin) / (rows);
@@ -6297,6 +6298,7 @@ uint16_t mode_2Dplasmarotozoom() {
     }
   }
   *a -= 0.03f + float(SEGENV.speed-128)*0.0002f;  // rotation speed
+  if(*a < -6283.18530718f) *a += 6283.18530718f; // 1000*2*PI, protect sin/cos from very large input float values (will give wrong results)
 
   return FRAMETIME;
 }
@@ -7641,8 +7643,10 @@ uint16_t mode_2Doctopus() {
     const int C_Y = (rows / 2) + ((SEGMENT.custom2 - 128)*rows)/255;
     for (int x = 0; x < cols; x++) {
       for (int y = 0; y < rows; y++) {
-        rMap[XY(x, y)].angle  = int(40.7436f * atan2_t((y - C_Y), (x - C_X)));  // avoid 128*atan2()/PI
-        rMap[XY(x, y)].radius = hypotf((x - C_X), (y - C_Y)) * mapp;      //thanks Sutaburosu
+        int dx = (x - C_X);
+        int dy = (y - C_Y);
+        rMap[XY(x, y)].angle  = int(40.7436f * atan2_t(dy, dx));  // avoid 128*atan2()/PI
+        rMap[XY(x, y)].radius = sqrtf(dx * dx + dy * dy) * mapp; //thanks Sutaburosu
       }
     }
   }

@@ -10,22 +10,25 @@
 
 //#define WLED_DEBUG_MATH
 
-#define modd(x, y) ((x) - (int)((x) / (y)) * (y))
-
-// Note: cos_t, sin_t and tan_t are very accurate but may be slow
+// Note: cos_t, sin_t and tan_t are very accurate but slow
 // the math.h functions use several kB of flash and are to be avoided if possible
 // sin16_t / cos16_t are faster and much more accurate than the fastled variants
-// sin_approx and cos_approx are float wrappers for sin16_t/cos16_t and have an accuracy of +/-0.0015 compared to sinf()
+// sin_approx and cos_approx are float wrappers for sin16_t/cos16_t and have an accuracy better than +/-0.0015 compared to sinf()
 // sin8_t / cos8_t are fastled replacements and use sin16_t / cos16_t. Slightly slower than fastled version but very accurate
+
+
+// Taylor series approximations, replaced with Bhaskara I's approximation
+/*
+#define modd(x, y) ((x) - (int)((x) / (y)) * (y))
 
 float cos_t(float phi)
 {
-  float x = modd(phi, TWO_PI);
+  float x = modd(phi, M_TWOPI);
   if (x < 0) x = -1 * x;
   int8_t sign = 1;
-  if (x > PI)
+  if (x > M_PI)
   {
-      x -= PI;
+      x -= M_PI;
       sign = -1;
   }
   float xx = x * x;
@@ -38,7 +41,7 @@ float cos_t(float phi)
 }
 
 float sin_t(float phi) {
-  float res =  cos_t(HALF_PI - phi);
+  float res =  cos_t(M_PI_2 - phi);
   #ifdef WLED_DEBUG_MATH
   Serial.printf("sin: %f,%f,%f,(%f)\n",x,res,sin(x),res-sin(x));
   #endif
@@ -54,6 +57,7 @@ float tan_t(float x) {
   #endif
   return res;
 }
+*/
 
 // 16-bit, integer based Bhaskara I's sine approximation: 16*x*(pi - x) / (5*pi^2 - 4*x*(pi - x))
 // input is 16bit unsigned (0-65535), output is 16bit signed (-32767 to +32767)
@@ -72,7 +76,7 @@ int16_t sin16_t(uint16_t theta) {
 }
 
 int16_t cos16_t(uint16_t theta) {
-  return sin16_t(theta + 16384); //cos(x) = sin(x+pi/2)
+  return sin16_t(theta + 0x4000); //cos(x) = sin(x+pi/2)
 }
 
 uint8_t sin8_t(uint8_t theta) {
@@ -85,19 +89,18 @@ uint8_t cos8_t(uint8_t theta) {
   return sin8_t(theta + 64); //cos(x) = sin(x+pi/2)
 }
 
-float sin_approx(float theta)
-{
-  theta = modd(theta, TWO_PI); // modulo: bring to -2pi to 2pi range
-  if(theta < 0) theta += M_TWOPI; // 0-2pi range
-  uint16_t scaled_theta = (uint16_t)(theta * (0xFFFF / M_TWOPI));
+float sin_approx(float theta) {
+  uint16_t scaled_theta = (int)(theta * (float)(0xFFFF / M_TWOPI)); // note: do not cast negative float to uint! cast to int first (undefined on C3)
   int32_t result = sin16_t(scaled_theta);
   float sin = float(result) / 0x7FFF;
   return sin;
 }
 
-float cos_approx(float theta)
-{
-  return sin_approx(theta + M_PI_2);
+float cos_approx(float theta) {
+  uint16_t scaled_theta = (int)(theta * (float)(0xFFFF / M_TWOPI)); // note: do not cast negative float to uint! cast to int first (undefined on C3)
+  int32_t result = sin16_t(scaled_theta + 0x4000);
+  float cos = float(result) / 0x7FFF;
+  return cos;
 }
 
 float tan_approx(float x) {
@@ -110,28 +113,23 @@ float tan_approx(float x) {
 #define ATAN2_CONST_A 0.1963f
 #define ATAN2_CONST_B 0.9817f
 
-// fast atan2() approximation source: public domain
+// atan2_t approximation, with the idea from https://gist.github.com/volkansalma/2972237?permalink_comment_id=3872525#gistcomment-3872525
 float atan2_t(float y, float x) {
-  if (x == 0.0f) return (y > 0.0f) ? M_PI_2 : (y < 0.0f) ? -M_PI_2 : 0.0f;
-
-  float abs_y = (y < 0.0f) ? -y : y + 1e-10f;  // make sure y is not zero to prevent division by 0
-  float z = abs_y / x;
-  float atan_approx;
-
-  if (z < 1.0f) {
-    atan_approx = z / (1.0f + ATAN2_CONST_A * z * z);
-    if (x < 0.0f) {
-      return (y >= 0.0f) ? atan_approx + PI : atan_approx - PI;
-    }
+	float abs_y = fabs(y);
+  float abs_x = fabs(x);
+  float r = (abs_x - abs_y) / (abs_y + abs_x + 1e-10f); // avoid division by zero by adding a small nubmer
+  float angle;
+  if(x < 0) {
+    r = -r;
+    angle = M_PI_2 + M_PI_4;
   }
-  else {
-    z = x / abs_y;
-    atan_approx = M_PI_2 - z / (1.0f + ATAN2_CONST_A * z * z);
-    if (y < 0.0f) {
-      return -atan_approx;
-    }
-  }
-  return atan_approx;
+  else
+    angle = M_PI_2 - M_PI_4;
+
+  float add = (ATAN2_CONST_A * (r * r) - ATAN2_CONST_B) * r;
+	angle += add;
+  angle = y < 0 ? -angle : angle;
+	return angle;
 }
 
 //https://stackoverflow.com/questions/3380628
@@ -145,10 +143,10 @@ float acos_t(float x) {
   ret = ret * xabs;
   ret = ret - 0.2121144f;
   ret = ret * xabs;
-  ret = ret + HALF_PI;
+  ret = ret + M_PI_2;
   ret = ret * sqrt(1.0f-xabs);
   ret = ret - 2 * negate * ret;
-  float res = negate * PI + ret;
+  float res = negate * M_PI + ret;
   #ifdef WLED_DEBUG_MATH
   Serial.printf("acos: %f,%f,%f,(%f)\n",x,res,acos(x),res-acos(x));
   #endif
@@ -156,7 +154,7 @@ float acos_t(float x) {
 }
 
 float asin_t(float x) {
-  float res = HALF_PI - acos_t(x);
+  float res = M_PI_2 - acos_t(x);
   #ifdef WLED_DEBUG_MATH
   Serial.printf("asin: %f,%f,%f,(%f)\n",x,res,asin(x),res-asin(x));
   #endif
@@ -172,7 +170,7 @@ float atan_t(float x) {
   //For A/B/C, see https://stackoverflow.com/a/42542593
   static const double A { 0.0776509570923569 };
   static const double B { -0.287434475393028 };
-  static const double C { ((HALF_PI/2) - A - B) };
+  static const double C { ((M_PI_4) - A - B) };
   // polynominal factors for approximation between 1 and 5
   static const float C0 {  0.089494f };
   static const float C1 {  0.974207f };
@@ -187,7 +185,7 @@ float atan_t(float x) {
   x = std::abs(x);
   float res;
   if (x > 5.0f) { // atan(x) converges to pi/2 - (1/x) for large values
-    res = HALF_PI - (1.0f/x);
+    res = M_PI_2 - (1.0f/x);
   } else if (x > 1.0f) { //1 < x < 5
     float xx = x * x;
     res = (C4*xx*xx)+(C3*xx*x)+(C2*xx)+(C1*x)+C0;
