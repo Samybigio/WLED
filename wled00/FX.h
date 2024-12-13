@@ -832,7 +832,7 @@ class WS2812FX {  // 96 bytes
       fixInvalidSegments(),                       // fixes incorrect segment configuration
       setPixelColor(unsigned n, uint32_t c),      // paints absolute strip pixel with index n and color c
       show(),                                     // initiates LED output
-      setTargetFps(unsigned fps),
+      setTargetFps(uint8_t fps),
       setupEffectData();                          // add default effects to the list; defined in FX.cpp
 
     inline void resetTimebase()           { timebase = 0UL - millis(); }
@@ -882,17 +882,14 @@ class WS2812FX {  // 96 bytes
 
     uint16_t
       getLengthPhysical() const,
-      getLengthTotal() const; // will include virtual/nonexistent pixels in matrix
+      getLengthTotal() const, // will include virtual/nonexistent pixels in matrix
+      getFps() const,
+      getMappedPixelIndex(uint16_t index) const;
 
-    inline uint16_t getFps() const          { return (millis() - _lastShow > 2000) ? 0 : _cumulativeFps +1; } // Returns the refresh rate of the LED strip
     inline uint16_t getFrameTime() const    { return _frametime; }        // returns amount of time a frame should take (in ms)
     inline uint16_t getMinShowDelay() const { return MIN_FRAME_DELAY; }   // returns minimum amount of time strip.service() can be delayed (constant)
     inline uint16_t getLength() const       { return _length; }           // returns actual amount of LEDs on a strip (2D matrix may have less LEDs than W*H)
     inline uint16_t getTransition() const   { return _transitionDur; }    // returns currently set transition time (in ms)
-    inline uint16_t getMappedPixelIndex(uint16_t index) const {           // convert logical address to physical
-      if (index < customMappingSize && (realtimeMode == REALTIME_MODE_INACTIVE || realtimeRespectLedMaps)) index = customMappingTable[index];
-      return index;
-    };
 
     uint32_t now, timebase;
     uint32_t getPixelColor(unsigned) const;

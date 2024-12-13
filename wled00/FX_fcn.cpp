@@ -1445,13 +1445,6 @@ void WS2812FX::show() {
   }
 }
 
-/**
- * Returns a true value if any of the strips are still being updated.
- * On some hardware (ESP32), strip updates are done asynchronously.
- */
-bool WS2812FX::isUpdating() const {
-  return !BusManager::canAllShow();
-}
 
 /**
  * Returns the refresh rate of the LED strip. Useful for finding out whether a given setup is fast enough.
@@ -1857,6 +1850,13 @@ bool WS2812FX::deserializeMap(unsigned n) {
   return (customMappingSize > 0);
 }
 
+uint16_t IRAM_ATTR WS2812FX::getMappedPixelIndex(uint16_t index) const {
+  // convert logical address to physical
+  if (index < customMappingSize
+    && (realtimeMode == REALTIME_MODE_INACTIVE || realtimeRespectLedMaps)) index = customMappingTable[index];
+
+  return index;
+}
 
 WS2812FX* WS2812FX::instance = nullptr;
 
